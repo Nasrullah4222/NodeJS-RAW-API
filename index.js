@@ -4,29 +4,29 @@
 *Date: 09 May, 2026
 *
 */
-//Dependencise
 
+// Dependencies
 const http = require('http');
-const {handleReqRes} = require('./helpers/handleReqRes');
+const { handleReqRes } = require('./helpers/handleReqRes');
 
-//app object-module scaffolding
-const app ={};
+// app object-module scaffolding
+const app = {};
 
-//configuration
-app.config={
+// configuration
+app.config = {
     port: 3000,
 };
 
-//create server
-apop.createServer = ()=>{
-    const server= http.createServer(app.handleReqRes);
-    server.listen(app.config.port, ()=>{
+// Handle Request Responses
+app.handleReqRes = handleReqRes;
+
+// create server
+app.createServer = () => {
+    const server = http.createServer(app.handleReqRes);
+    server.listen(app.config.port, () => {
         console.log(`listening on port ${app.config.port}`);
     });
 };
 
-//Handle Request Responses
-app.handleReqRes = handleReqRes;
-
-//start the server
+// start the server
 app.createServer();
