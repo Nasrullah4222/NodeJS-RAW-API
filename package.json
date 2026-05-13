@@ -1,10 +1,21 @@
-{
+﻿{
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "eslint": "8.2.0",
     "eslint-config-airbnb-base": "15.0.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "2.25.2",
     "eslint-plugin-prettier": "^5.5.5",
+    "nodemon": "^3.1.10",
     "prettier": "^3.8.3"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "production": "cross-env NODE_ENV=production node index.js",
+    "staging": "cross-env NODE_ENV=staging nodemon index.js",
+    "dev": "cross-env NODE_ENV=development nodemon index.js",
+    "test": "echo \"No tests yet\"",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   }
 }
