@@ -4,20 +4,21 @@
 * Date: 09 May, 2026
 */
 // dependencies
-const url = require('url');
 const { StringDecoder } = require('string_decoder');
 const routes = require('../routes');
+const { parseJSON } = require('./utilities');
 const { notFoundHandler } = require('../handler/routeHandeler/notFoundHandler');
 
 // module scaffolding
 const handler = {};
 
 handler.handleReqRes = (req, res) => {
-  const parsedUrl = url.parse(req.url, true);
+  const baseUrl = `http://${req.headers.host || 'localhost'}`;
+  const parsedUrl = new URL(req.url, baseUrl);
   const path = parsedUrl.pathname;
   const trimmedPath = path.replace(/^\/+|\/+$/g, '');
   const method = req.method.toLowerCase();
-  const queryStringObject = parsedUrl.query;
+  const queryStringObject = Object.fromEntries(parsedUrl.searchParams.entries());
   const headersObject = req.headers;
 
   const requestProperties = {
@@ -39,9 +40,10 @@ handler.handleReqRes = (req, res) => {
   });
 
   req.on('end', () => {
-    realData += decoder.end() || '';
-    if (realData) requestProperties.body = realData;
+    realData += decoder.end();
 
+    requestProperties.body = parseJSON(realData);
+    
     chosenHandler(requestProperties, (statusCode, payload) => {
       statusCode = typeof statusCode === 'number' ? statusCode : 500;
       payload = typeof payload === 'object' ? payload : {};

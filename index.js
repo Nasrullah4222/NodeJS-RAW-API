@@ -8,34 +8,12 @@
 // Dependencies
 const http = require('http');
 const { handleReqRes } = require('./helpers/handleReqRes');
-const environment = require('./handler/routeHandeler/environment');
+const environment = require('./helpers/environment');
 const data = require('./lib/data');
 
 // app object-module scaffolding
 const app = {};
 
-//testing file system
-//ToDO: Pore Dikha jabe
-
-data.create('test', 'newFile', { name: 'Bangladesh', language: 'Bangla' }, err => {
-    console.log(err);
-});
-
-/*
-data.read('test', 'newFile', (err, data) => {
-    console.log(err, data);
-});
-
-data.update('test', 'newFile', { name: 'England', language: 'English' }, err => {
-    console.log(err);
-});
-
-data.delete('test', 'newFile', err => {
-    if (!err) {
-        console.log('File deleted successfully');   
-    }
-});
-*/
 
 // Handle Request Responses
 app.handleReqRes = handleReqRes;
