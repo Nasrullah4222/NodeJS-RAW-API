@@ -9,6 +9,7 @@ const { hash } = require('../../helpers/utilities');
 const { parseJSON } = require('../../helpers/utilities');
 // module scaffolding
 const handler = {};
+const tokenHandler = require('./tokenHandler');
 
 handler.userHandler = (requestProperties, callback) => {
     const acceptedMethods = ['get', 'post', 'put', 'delete'];
@@ -88,21 +89,38 @@ handler._user.get = (requestProperties, callback) => {
     //check the phone number is valid
     const phone = typeof (requestProperties.queryStringObject.phone) === 'string' && requestProperties.queryStringObject.phone.trim().length === 11 ? requestProperties.queryStringObject.phone : false;
     if (phone) {
-        // lookup the user
-        data.read('users', phone, (err, u) => {
-            const user = { ...parseJSON(u) };
-            /*
-                { name: 'John Doe', phone: '12345678901', password: 'hashedpassword', tosAgreement: true }
-            */
-            if (!err && user) {
-                delete user.password;
-                callback(200, user);
+        // verify the token
+        const rawToken = requestProperties.headersObject.token || requestProperties.headersObject['x-token'] || requestProperties.headersObject.authorization;
+        let token = typeof rawToken === 'string' ? rawToken.trim() : false;
+        if (token && token.toLowerCase().startsWith('bearer ')) {
+            token = token.slice(7).trim();
+        }
+
+        tokenHandler._token.verify(token, phone, (tokenIsValid) => {
+            if (tokenIsValid) {
+                // lookup the user
+                data.read('users', phone, (err, u) => {
+                const user = { ...parseJSON(u) };
+                /*
+                     { name: 'John Doe', phone: '12345678901', password: 'hashedpassword', tosAgreement: true }
+                */
+                if (!err && user) {
+                     delete user.password;
+                    callback(200, user);
+                } else {
+                    callback(404, {
+                        error: 'User not found',
+                    });
+                }
+            });
             } else {
-                callback(404, {
-                    error: 'User not found',
+                callback(403, {
+                    error: 'Missing required token in header, or token is invalid',
                 });
             }
         });
+        
+        
     } else {
         callback(400, {
             error: 'Phone number is invalid',
@@ -124,47 +142,61 @@ handler._user.put = (requestProperties, callback) => {
     const tosAgreement = typeof (requestProperties.body.tosAgreement) === 'boolean' && requestProperties.body.tosAgreement === true ? true : false;
 
     if (phone) {
-        if (firstName || lastName || password) {
-            // lookup the user
-            data.read('users', phone, (err, u) => {
-                if (!err && u) {
-                    // update the user
-                    const user = { ...parseJSON(u) };
-                    if (firstName) {
-                        user.firstName = firstName;
-                    }
-                    if (lastName) {
-                        user.lastName = lastName;
-                    }
-                    if (password) {
-                        user.password = hash(password);
-                    }
-                    if (tosAgreement !== undefined) {
-                        user.tosAgreement = tosAgreement;
-                    }
-                    // update the user in the database
-                    data.update('users', phone, user, err => {
-                        if (!err) {
-                            callback(200, {
-                                message: 'User updated successfully',
+        const rawToken = requestProperties.headersObject.token || requestProperties.headersObject['x-token'] || requestProperties.headersObject.authorization;
+        let token = typeof rawToken === 'string' ? rawToken.trim() : false;
+        if (token && token.toLowerCase().startsWith('bearer ')) {
+            token = token.slice(7).trim();
+        }
+
+        tokenHandler._token.verify(token, phone, (tokenIsValid) => {
+            if (tokenIsValid) {
+                if (firstName || lastName || password) {
+                    // lookup the user
+                    data.read('users', phone, (err, u) => {
+                        if (!err && u) {
+                            // update the user
+                            const user = { ...parseJSON(u) };
+                            if (firstName) {
+                                user.firstName = firstName;
+                            }
+                            if (lastName) {
+                                user.lastName = lastName;
+                            }
+                            if (password) {
+                                user.password = hash(password);
+                            }
+                            if (tosAgreement !== undefined) {
+                                user.tosAgreement = tosAgreement;
+                            }
+                            // update the user in the database
+                            data.update('users', phone, user, err => {
+                                if (!err) {
+                                    callback(200, {
+                                        message: 'User updated successfully',
+                                    });
+                                } else {
+                                    callback(500, {
+                                        error: 'Could not update user',
+                                    });
+                                }
                             });
                         } else {
-                            callback(500, {
-                                error: 'Could not update user',
+                            callback(404, {
+                                error: 'User not found',
                             });
                         }
                     });
                 } else {
-                    callback(404, {
-                        error: 'User not found',
+                    callback(400, {
+                        error: 'No valid updates provided',
                     });
                 }
-            });
-        } else {
-            callback(400, {
-                error: 'No valid updates provided',
-            });
-        }
+            } else {
+                callback(403, {
+                    error: 'Missing required token in header, or token is invalid',
+                });
+            }
+        });
     } else {
         callback(400, {
             error: 'Phone number is invalid',
@@ -178,24 +210,38 @@ handler._user.delete = (requestProperties, callback) => {
     //check the phone number is valid
     const phone = typeof (requestProperties.queryStringObject.phone) === 'string' && requestProperties.queryStringObject.phone.trim().length === 11 ? requestProperties.queryStringObject.phone : false;
     if (phone) {
-        // lookup the user
-        data.read('users', phone, (err, u) => {
-            if (!err && u) {
-                // delete the user
-                data.delete('users', phone, err => {
-                    if (!err) {
-                        callback(200, {
-                            message: 'User deleted successfully',
+        const rawToken = requestProperties.headersObject.token || requestProperties.headersObject['x-token'] || requestProperties.headersObject.authorization;
+        let token = typeof rawToken === 'string' ? rawToken.trim() : false;
+        if (token && token.toLowerCase().startsWith('bearer ')) {
+            token = token.slice(7).trim();
+        }
+
+        tokenHandler._token.verify(token, phone, (tokenIsValid) => {
+            if (tokenIsValid) {
+                // lookup the user
+                data.read('users', phone, (err, u) => {
+                    if (!err && u) {
+                        // delete the user
+                        data.delete('users', phone, err => {
+                            if (!err) {
+                                callback(200, {
+                                    message: 'User deleted successfully',
+                                });
+                            } else {
+                                callback(500, {
+                                    error: 'Could not delete user',
+                                });
+                            }
                         });
                     } else {
-                        callback(500, {
-                            error: 'Could not delete user',
+                        callback(404, {
+                            error: 'User not found',
                         });
                     }
                 });
             } else {
-                callback(404, {
-                    error: 'User not found',
+                callback(403, {
+                    error: 'Missing required token in header, or token is invalid',
                 });
             }
         });

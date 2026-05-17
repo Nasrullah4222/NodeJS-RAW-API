@@ -39,4 +39,23 @@ utilities.hash = (str) => {
     }
 };
 
+// Create random String
+utilities.createRandomString = (strlength) => {
+    const length = typeof strlength === 'number' && strlength > 0 ? strlength : false;
+    if (!length) {
+        return false;
+    }
+
+    const possiblecharacters = 'abcdefghijklmnopqrstuvwxyz1234567890';
+    const possibleLength = possiblecharacters.length;
+    const randomBytes = crypto.randomBytes(length);
+    let output = '';
+
+    for (let i = 0; i < length; i += 1) {
+        output += possiblecharacters.charAt(randomBytes[i] % possibleLength);
+    }
+
+    return output;
+};
+
 module.exports = utilities;
